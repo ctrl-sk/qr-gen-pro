@@ -3,10 +3,11 @@ import { db } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { shortId: string } }
+  { params }: { params: Promise<{ shortId: string }> }
 ) {
   try {
-    const shortUrl = `${process.env.NEXT_PUBLIC_APP_URL}/r/${params.shortId}`;
+    const { shortId } = await params;
+    const shortUrl = `${process.env.NEXT_PUBLIC_APP_URL}/r/${shortId}`;
     
     const qrCode = await db.qrCode.findUnique({
       where: { shortUrl },
