@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model QrCode {
+  id          String   @id @default(cuid())
+  originalUrl String
+  shortUrl    String   @unique
+  qrData      String   // Base64 encoded QR code image
+  scanCount   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Customization options
+  gradientColors  String? // JSON array of colors for gradient
+  logoData        String? // Base64 encoded SVG logo
+  dotType         String? @default("dots")
+  cornerEyeType   String? @default("extra-rounded")
+  cornerEyeColor  String? @default("#CF4500")
+  dotColor        String? @default("#141413")
+  cornerSquareColor String? @default("#323231")
+  cornerSquareType String? @default("extra-rounded")
+  
+  scans       Scan[]
+  
+  @@map("qr_codes")
+}
+
+model Scan {
+  id        String   @id @default(cuid())
+  qrCodeId  String
+  userAgent String?
+  ipAddress String?
+  timestamp DateTime @default(now())
+  
+  qrCode    QrCode   @relation(fields: [qrCodeId], references: [id], onDelete: Cascade)
+  
+  @@map("scans")
+}
