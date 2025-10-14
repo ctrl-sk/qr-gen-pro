@@ -23,7 +23,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   try {
     const body: UpdatePayload = await request.json();
     const { id } = params;
-
+    
     const updatedQrCode = await db.qrCode.update({
       where: { id },
       data: body, // Pass the whole body to update any provided fields

@@ -297,7 +297,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
     } catch (error) {
       console.error('Error updating QR code:', error);
     }
-  }, [url, currentMode, customization, qrBorderExtension]);
+  }, [url, currentMode, customization, qrBorderExtension, PREVIEW_SIZE]);
 
   const setMode = (mode: string) => {
     setCurrentMode(mode);
