@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Pause, Play, Trash2, Eye, Edit } from 'lucide-react';
 
 interface QRCode {
@@ -26,27 +26,29 @@ interface TrackingDashboardProps {
   onLoadQrCode?: (qrCode: QRCode) => void;
 }
 
-export default function TrackingDashboard({ refreshTrigger, onLoadQrCode }: TrackingDashboardProps) {
+export default function TrackingDashboard({
+  refreshTrigger,
+  onLoadQrCode
+}: TrackingDashboardProps) {
   const [qrCodes, setQrCodes] = useState<QRCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUrl, setEditingUrl] = useState<string | null>(null);
-  const [editUrl, setEditUrl] = useState('');
-
-  const fetchQrCodes = async () => {
-    try {
-      const response = await fetch('/api/qr-codes');
-      if (response.ok) {
-        const data = await response.json();
-        setQrCodes(data);
-      }
-    } catch (error) {
-      console.error('Error fetching QR codes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [editUrl, setEditUrl] = useState<string>('');
 
   useEffect(() => {
+    const fetchQrCodes = async () => {
+      try {
+        const response = await fetch('/api/qr-codes');
+        if (response.ok) {
+          const data = await response.json();
+          setQrCodes(data);
+        }
+      } catch (error) {
+        console.error('Error fetching QR codes:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchQrCodes();
   }, [refreshTrigger]);
 

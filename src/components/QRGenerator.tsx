@@ -1,39 +1,41 @@
+
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import QRCodeStyling from 'qr-code-styling';
 import { Copy, Download, Upload, Palette, Settings, Eye } from 'lucide-react';
 
-const DEFAULT_URL = "https://shocky.in";
-const LIGHT_MODE = "light";
-const DARK_MODE = "dark";
+const DEFAULT_URL = 'https://shocky.in';
+
+const LIGHT_MODE = 'light';
+const DARK_MODE = 'dark';
 
 const COLORS = {
   light: {
-    dots: "#141413",
-    cornersSquare: "#323231",
-    cornersDot: "#CF4500",
+    dots: '#141413',
+    cornersSquare: '#323231',
+    cornersDot: '#CF4500'
   },
   dark: {
-    dots: "#ffffff",
-    cornersSquare: "#444340",
-    cornersDot: "#F37338",
-  },
+    dots: '#ffffff',
+    cornersSquare: '#444340',
+    cornersDot: '#F37338'
+  }
 };
 
 const DOT_TYPES = [
-  { value: "dots", label: "Dots" },
-  { value: "rounded", label: "Rounded" },
-  { value: "square", label: "Square" },
-  { value: "extra-rounded", label: "Extra Rounded" },
+  { value: 'dots', label: 'Dots' },
+  { value: 'rounded', label: 'Rounded' },
+  { value: 'square', label: 'Square' },
+  { value: 'extra-rounded', label: 'Extra Rounded' }
 ];
 
 const CORNER_EYE_TYPES = [
-  { value: "square", label: "Square" },
-  { value: "extra-rounded", label: "Extra Rounded" },
-  { value: "dot", label: "Dot" },
-  { value: "classy", label: "Classy" },
-  { value: "classy-rounded", label: "Classy Rounded" },
+  { value: 'square', label: 'Square' },
+  { value: 'extra-rounded', label: 'Extra Rounded' },
+  { value: 'dot', label: 'Dot' },
+  { value: 'classy', label: 'Classy' },
+  { value: 'classy-rounded', label: 'Classy Rounded' }
 ];
 
 interface CustomizationOptions {
@@ -53,7 +55,11 @@ interface QRGeneratorProps {
   onQrCodeLoaded?: () => void;
 }
 
-export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeLoaded }: QRGeneratorProps) {
+export default function QRGenerator({
+  onQrCodeGenerated,
+  qrCodeToLoad,
+  onQrCodeLoaded
+}: QRGeneratorProps) {
   const [url, setUrl] = useState(DEFAULT_URL);
   const [currentMode, setCurrentMode] = useState(DARK_MODE);
   const [qr, setQr] = useState<QRCodeStyling | null>(null);
@@ -62,7 +68,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
   const [generatedQrId, setGeneratedQrId] = useState<string | null>(null);
   const [showCustomization, setShowCustomization] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
-  
+
   const qrContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -74,7 +80,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
     cornerEyeColor: '#CF4500',
     dotColor: '#141413',
     cornerSquareColor: '#323231',
-    cornerSquareType: 'extra-rounded',
+    cornerSquareType: 'extra-rounded'
   });
 
   const QR_SIZE = 360;

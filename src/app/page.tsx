@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import QRGenerator from '@/components/QRGenerator';
 import TrackingDashboard from '@/components/TrackingDashboard';
 
@@ -10,7 +10,7 @@ export default function Home() {
   const [qrCodeToLoad, setQrCodeToLoad] = useState<any>(null);
 
   const handleQrCodeGenerated = useCallback(() => {
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev) => prev + 1);
     // Don't automatically switch tabs - let user stay on generator
   }, []);
 
@@ -21,10 +21,9 @@ export default function Home() {
 
   return (
     <main className="app">
-      <header className="app__header">
+      <header className="appheader">
         <h1>QR Code Generator & Tracker</h1>
       </header>
-
       <div className="card">
         <nav className="tab-nav">
           <button
@@ -40,17 +39,16 @@ export default function Home() {
             Track QR Codes
           </button>
         </nav>
-
         {activeTab === 'generator' && (
-          <QRGenerator 
-            onQrCodeGenerated={handleQrCodeGenerated} 
+          <QRGenerator
+            onQrCodeGenerated={handleQrCodeGenerated}
             qrCodeToLoad={qrCodeToLoad}
             onQrCodeLoaded={() => setQrCodeToLoad(null)}
           />
         )}
         {activeTab === 'tracking' && (
-          <TrackingDashboard 
-            refreshTrigger={refreshTrigger} 
+          <TrackingDashboard
+            refreshTrigger={refreshTrigger}
             onLoadQrCode={handleLoadQrCode}
           />
         )}
