@@ -19,7 +19,7 @@ interface UpdatePayload {
   cornerSquareType?: string;
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: any) {
   try {
     const body: UpdatePayload = await request.json();
     const { id } = params;
@@ -36,7 +36,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: any) {
   try {
     const { id } = params;
     await db.qrCode.delete({ where: { id } });
