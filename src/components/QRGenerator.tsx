@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import QRCodeStyling from 'qr-code-styling';
-import { Copy, Download, Upload, Palette, Settings, Eye } from 'lucide-react';
+import { Copy, Download, Upload } from 'lucide-react';
 
 const DEFAULT_URL = "https://shocky.in";
 const LIGHT_MODE = "light";
@@ -47,20 +47,37 @@ interface CustomizationOptions {
   cornerSquareType: string;
 }
 
+interface QRCodeData {
+  id: string;
+  originalUrl: string;
+  shortUrl: string;
+  qrData: string;
+  scanCount: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  gradientColors?: string;
+  logoData?: string | null;
+  dotType?: string;
+  cornerEyeType?: string;
+  cornerEyeColor?: string;
+  dotColor?: string;
+  cornerSquareColor?: string;
+  cornerSquareType?: string;
+}
+
 interface QRGeneratorProps {
   onQrCodeGenerated?: () => void;
-  qrCodeToLoad?: any;
+  qrCodeToLoad?: QRCodeData;
   onQrCodeLoaded?: () => void;
 }
 
 export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeLoaded }: QRGeneratorProps) {
   const [url, setUrl] = useState(DEFAULT_URL);
   const [currentMode, setCurrentMode] = useState(DARK_MODE);
-  const [qr, setQr] = useState<any>(null);
+  const [qr, setQr] = useState<QRCodeStyling | null>(null);
   const [exportSize, setExportSize] = useState(400);
   const [shortUrl, setShortUrl] = useState<string | null>(null);
-  const [generatedQrId, setGeneratedQrId] = useState<string | null>(null);
-  const [showCustomization, setShowCustomization] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const qrContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -123,7 +140,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
     }
   };
 
-  const qrBorderExtension = (svg: SVGElement) => {
+  const qrBorderExtension = useCallback((svg: SVGElement) => {
     const width = PREVIEW_SIZE;
     const height = PREVIEW_SIZE;
     const size = Math.min(width, height) - 2 * (FRAME_PADDING + FRAME_STROKE / 2);
@@ -135,7 +152,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
       svg.insertBefore(svgDefs, svg.firstChild);
     }
 
-    let oldGrad = svgDefs.querySelector('#frame-gradient');
+    const oldGrad = svgDefs.querySelector('#frame-gradient');
     if (oldGrad) svgDefs.removeChild(oldGrad);
 
     const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
@@ -176,9 +193,9 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
     });
 
     svg.appendChild(border);
-  };
+  }, [customization, PREVIEW_SIZE, FRAME_PADDING, FRAME_STROKE]);
 
-  const createQrInstance = (value: string) => {
+  const createQrInstance = useCallback((value: string) => {
     const palette = COLORS[currentMode as keyof typeof COLORS];
     const qrOptions = {
       width: PREVIEW_SIZE,
@@ -207,9 +224,9 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
       image: customization.logoData || undefined,
     };
     return new QRCodeStyling(qrOptions);
-  };
+  }, [currentMode, customization, PREVIEW_SIZE]);
 
-  const mountQr = async () => {
+  const mountQr = useCallback(async () => {
     if (!qrContainerRef.current) return;
     
     qrContainerRef.current.innerHTML = "";
@@ -247,9 +264,9 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
     } catch (error) {
       console.error('Error mounting QR code:', error);
     }
-  };
+  }, [url, createQrInstance, qrBorderExtension, PREVIEW_SIZE]);
 
-  const updateQr = async () => {
+  const updateQr = useCallback(async () => {
     if (!qr) return;
     
     const palette = COLORS[currentMode as keyof typeof COLORS];
@@ -274,7 +291,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
     });
     
     await mountQr();
-  };
+  }, [qr, url, currentMode, customization, mountQr]);
 
   const setMode = async (mode: string) => {
     setCurrentMode(mode);
@@ -286,7 +303,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
       const response = await fetch('/api/qr-codes');
       if (response.ok) {
         const qrCodes = await response.json();
-        return qrCodes.find((qr: any) => qr.originalUrl === urlToCheck);
+        return qrCodes.find((qr: QRCodeData) => qr.originalUrl === urlToCheck);
       }
     } catch (error) {
       console.error('Error checking existing URL:', error);
@@ -335,7 +352,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
               cornerSquareType: customization.cornerSquareType,
             }),
           }).then(response => response.json())
-          .then(data => {
+          .then(() => {
             // Update QR display
             mountQr();
             onQrCodeGenerated?.();
@@ -434,8 +451,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
               cornerSquareType: customization.cornerSquareType,
             }),
           }).then(response => response.json())
-          .then(data => {
-            setGeneratedQrId(data.id);
+          .then(() => {
             // Update QR display with short URL
             setUrl(finalShortUrl);
             mountQr();
@@ -542,11 +558,11 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
 
   useEffect(() => {
     mountQr();
-  }, []);
+  }, [mountQr]);
 
   useEffect(() => {
     updateQr();
-  }, [url, currentMode, customization]);
+  }, [url, currentMode, customization, updateQr]);
 
   // Load existing QR code data when qrCodeToLoad is provided
   useEffect(() => {
@@ -561,7 +577,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
           setCustomization(prev => ({
             ...prev,
             gradientColors,
-            logoData: qrCodeToLoad.logoData,
+            logoData: qrCodeToLoad.logoData || null,
             dotType: qrCodeToLoad.dotType || 'dots',
             cornerEyeType: qrCodeToLoad.cornerEyeType || 'extra-rounded',
             cornerEyeColor: qrCodeToLoad.cornerEyeColor || '#CF4500',

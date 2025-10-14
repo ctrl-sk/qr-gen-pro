@@ -24,7 +24,7 @@ export async function GET(
     // Record the scan
     const userAgent = request.headers.get('user-agent');
     const forwarded = request.headers.get('x-forwarded-for');
-    const ipAddress = forwarded ? forwarded.split(',')[0] : request.ip || 'unknown';
+    const ipAddress = forwarded ? forwarded.split(',')[0] : 'unknown';
 
     await db.scan.create({
       data: {

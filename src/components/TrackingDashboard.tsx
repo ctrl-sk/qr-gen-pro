@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Pause, Play, Trash2, Eye, Edit } from 'lucide-react';
+import { Pause, Trash2, Eye, Edit } from 'lucide-react';
 
 interface QRCode {
   id: string;
@@ -52,12 +52,12 @@ export default function TrackingDashboard({
     fetchQrCodes();
   }, [refreshTrigger]);
 
-  const handleEditClick = (qr: QRCode) => {
-    setEditingUrl(qr.id);
-    setEditUrl(qr.originalUrl);
+  const handleEditClick = (qrCode: QRCode) => {
+    setEditingUrl(qrCode.id);
+    setEditUrl(qrCode.originalUrl);
   };
 
-  const handleEditSave = (qr: QRCode) => {
+  const handleEditSave = () => {
     // Implement edit save logic - send POST/PATCH to your API
     setEditingUrl(null);
   };
@@ -67,18 +67,18 @@ export default function TrackingDashboard({
     setEditUrl('');
   };
 
-  const toggleQrActive = async (qr: QRCode) => {
+  const toggleQrActive = async () => {
     // Implement toggle logic - send POST/PATCH to your API
     setLoading(true);
   };
 
-  const deleteQrCode = async (qr: QRCode) => {
+  const deleteQrCode = async () => {
     // Implement delete logic - send DELETE to your API
     setLoading(true);
   };
 
-  const loadQrCodeToGenerator = (qr: QRCode) => {
-    if (onLoadQrCode) onLoadQrCode(qr);
+  const loadQrCodeToGenerator = (qrCode: QRCode) => {
+    if (onLoadQrCode) onLoadQrCode(qrCode);
   };
 
   const formatDate = (dateStr: string) => {
@@ -115,18 +115,17 @@ export default function TrackingDashboard({
           </tr>
         </thead>
         <tbody>
-          {qrCodes.map(qr => (
-            <tr key={qr.id}>
+          {qrCodes.map(qrCode => (
+            <tr key={qrCode.id}>
               <td>
                 <Eye
                   size={18}
                   style={{ cursor: 'pointer' }}
-                  onClick={() => loadQrCodeToGenerator(qr)}
-                  title="Click to load in generator"
+                  onClick={() => loadQrCodeToGenerator(qrCode)}
                 />
               </td>
               <td>
-                {editingUrl === qr.id ? (
+                {editingUrl === qrCode.id ? (
                   <input
                     value={editUrl}
                     onChange={e => setEditUrl(e.target.value)}
@@ -134,24 +133,24 @@ export default function TrackingDashboard({
                     autoFocus
                   />
                 ) : (
-                  qr.originalUrl
+                  qrCode.originalUrl
                 )}
               </td>
-              <td>{qr.shortUrl}</td>
-              <td>{qr.scanCount}</td>
-              <td>{qr.isActive ? 'Active' : 'Paused'}</td>
-              <td>{formatDate(qr.createdAt)}</td>
+              <td>{qrCode.shortUrl}</td>
+              <td>{qrCode.scanCount}</td>
+              <td>{qrCode.isActive ? 'Active' : 'Paused'}</td>
+              <td>{formatDate(qrCode.createdAt)}</td>
               <td>
-                {editingUrl === qr.id ? (
+                {editingUrl === qrCode.id ? (
                   <>
-                    <button onClick={() => handleEditSave(qr)}>Save</button>
+                    <button onClick={handleEditSave}>Save</button>
                     <button onClick={handleEditCancel}>Cancel</button>
                   </>
                 ) : (
                   <>
-                    <Edit size={16} style={{ cursor: 'pointer' }} onClick={() => handleEditClick(qr)} title="Edit URL" />
-                    <Pause size={16} style={{ cursor: 'pointer' }} onClick={() => toggleQrActive(qr)} title="Pause/Activate" />
-                    <Trash2 size={16} style={{ cursor: 'pointer' }} onClick={() => deleteQrCode(qr)} title="Delete QR Code" />
+                    <Edit size={16} style={{ cursor: 'pointer' }} onClick={() => handleEditClick(qrCode)} />
+                    <Pause size={16} style={{ cursor: 'pointer' }} onClick={toggleQrActive} />
+                    <Trash2 size={16} style={{ cursor: 'pointer' }} onClick={deleteQrCode} />
                   </>
                 )}
               </td>
