@@ -19,10 +19,10 @@ interface UpdatePayload {
   cornerSquareType?: string;
 }
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, context: { params: { id: string } }) {
   try {
     const body: UpdatePayload = await request.json();
-    const { id } = params;
+    const { id } = context.params;
     
     const updatedQrCode = await db.qrCode.update({
       where: { id },
@@ -36,9 +36,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: { id: string } }) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     await db.qrCode.delete({ where: { id } });
     return NextResponse.json({ message: "QR code deleted successfully" });
   } catch (error) {
