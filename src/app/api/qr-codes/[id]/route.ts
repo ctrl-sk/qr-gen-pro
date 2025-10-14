@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 // Satisfies the Vercel build process for route handler type validation.
@@ -19,10 +19,10 @@ interface UpdatePayload {
   cornerSquareType?: string;
 }
 
-export async function PATCH(request: Request, context: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body: UpdatePayload = await request.json();
-    const { id } = context.params;
+    const { id } = params;
     
     const updatedQrCode = await db.qrCode.update({
       where: { id },
@@ -36,9 +36,9 @@ export async function PATCH(request: Request, context: { params: { id: string } 
   }
 }
 
-export async function DELETE(request: Request, context: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = context.params;
+    const { id } = params;
     await db.qrCode.delete({ where: { id } });
     return NextResponse.json({ message: "QR code deleted successfully" });
   } catch (error) {
