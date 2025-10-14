@@ -1,40 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+interface UpdatePayload {
+  originalUrl?: string;
+  isActive?: boolean;
+  // Add other fields that can be updated via PATCH
+  qrData?: string;
+  gradientColors?: string;
+  logoData?: string | null;
+  dotType?: string;
+  cornerEyeType?: string;
+  cornerEyeColor?: string;
+  dotColor?: string;
+  cornerSquareColor?: string;
+  cornerSquareType?: string;
+}
+
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { isActive } = await request.json();
-    const { id } = await params;
-    
-    const qrCode = await db.qrCode.update({
+    const body: UpdatePayload = await request.json();
+    const { id } = params;
+
+    const updatedQrCode = await db.qrCode.update({
       where: { id },
-      data: { isActive },
+      data: body, // Pass the whole body to update any provided fields
     });
 
-    return NextResponse.json(qrCode);
+    return NextResponse.json(updatedQrCode);
   } catch (error) {
-    console.error('Error updating QR code:', error);
-    return NextResponse.json({ error: 'Failed to update QR code' }, { status: 500 });
+    console.error("Error updating QR code:", error);
+    return NextResponse.json({ error: "Failed to update QR code" }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params;
-    
-    await db.qrCode.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ message: 'QR code deleted successfully' });
+    const { id } = params;
+    await db.qrCode.delete({ where: { id } });
+    return NextResponse.json({ message: "QR code deleted successfully" });
   } catch (error) {
-    console.error('Error deleting QR code:', error);
-    return NextResponse.json({ error: 'Failed to delete QR code' }, { status: 500 });
+    console.error("Error deleting QR code:", error);
+    return NextResponse.json({ error: "Failed to delete QR code" }, { status: 500 });
   }
 }

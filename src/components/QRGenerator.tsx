@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import QRCodeStyling from 'qr-code-styling';
-import { Copy, Download, Upload } from 'lucide-react';
+import { Copy, Download, Upload, Sun, Moon } from 'lucide-react';
+import { Toggle } from '@/components/ui/toggle';
 
 const DEFAULT_URL = "https://shocky.in";
 const LIGHT_MODE = "light";
@@ -33,6 +34,7 @@ const CORNER_EYE_TYPES = [
   { value: "extra-rounded", label: "Extra Rounded" },
   { value: "dot", label: "Dot" },
   { value: "classy", label: "Classy" },
+  { value: "dots", label: "Dots" },
   { value: "classy-rounded", label: "Classy Rounded" },
 ];
 
@@ -74,11 +76,13 @@ interface QRGeneratorProps {
 
 export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeLoaded }: QRGeneratorProps) {
   const [url, setUrl] = useState(DEFAULT_URL);
+  const [originalUrl, setOriginalUrl] = useState(DEFAULT_URL);
   const [currentMode, setCurrentMode] = useState(DARK_MODE);
   const [qr, setQr] = useState<QRCodeStyling | null>(null);
   const [exportSize, setExportSize] = useState(400);
   const [shortUrl, setShortUrl] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [editingQr, setEditingQr] = useState<QRCodeData | null>(null);
   const qrContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -226,11 +230,40 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
     return new QRCodeStyling(qrOptions);
   }, [currentMode, customization, PREVIEW_SIZE]);
 
-  const mountQr = useCallback(async () => {
+
+  const updateQr = useCallback(async () => {
     if (!qrContainerRef.current) return;
     
-    qrContainerRef.current.innerHTML = "";
-    const qrInstance = createQrInstance(url);
+    // Create a new QR instance with updated settings
+    const palette = COLORS[currentMode as keyof typeof COLORS];
+    const data = url || DEFAULT_URL;
+    
+    const qrInstance = new QRCodeStyling({
+      width: PREVIEW_SIZE,
+      height: PREVIEW_SIZE,
+      type: "svg" as const,
+      data,
+      qrOptions: {
+        errorCorrectionLevel: "H" as const,
+      },
+      backgroundOptions: {
+        color: "transparent",
+      },
+      dotsOptions: {
+        color: currentMode === DARK_MODE ? "#ffffff" : palette.dots,
+        type: customization.dotType as "dots" | "rounded" | "square" | "extra-rounded",
+      },
+      cornersSquareOptions: {
+        color: currentMode === DARK_MODE ? customization.cornerSquareColor : palette.cornersSquare,
+        type: customization.cornerSquareType as "square" | "extra-rounded" | "dot" | "classy" | "classy-rounded",
+      },
+      cornersDotOptions: {
+        color: currentMode === DARK_MODE ? customization.cornerEyeColor : palette.cornersDot,
+        type: customization.cornerEyeType as "square" | "extra-rounded" | "dot" | "classy" | "classy-rounded",
+      },
+      image: customization.logoData || undefined,
+    });
+
     setQr(qrInstance);
 
     try {
@@ -262,40 +295,12 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
       };
       reader.readAsText(blob);
     } catch (error) {
-      console.error('Error mounting QR code:', error);
+      console.error('Error updating QR code:', error);
     }
-  }, [url, createQrInstance, qrBorderExtension, PREVIEW_SIZE]);
+  }, [url, currentMode, customization, qrBorderExtension]);
 
-  const updateQr = useCallback(async () => {
-    if (!qr) return;
-    
-    const palette = COLORS[currentMode as keyof typeof COLORS];
-    const data = url || DEFAULT_URL;
-    
-    qr.update({
-      data,
-      backgroundOptions: { color: "transparent" },
-      dotsOptions: { 
-        color: currentMode === DARK_MODE ? "#ffffff" : palette.dots, 
-        type: customization.dotType as "dots" | "rounded" | "square" | "extra-rounded"
-      },
-      cornersSquareOptions: { 
-        color: currentMode === DARK_MODE ? customization.cornerSquareColor : palette.cornersSquare, 
-        type: customization.cornerSquareType as "square" | "extra-rounded" | "dot" | "classy" | "classy-rounded"
-      },
-      cornersDotOptions: { 
-        color: currentMode === DARK_MODE ? customization.cornerEyeColor : palette.cornersDot, 
-        type: customization.cornerEyeType as "square" | "extra-rounded" | "dot" | "classy" | "classy-rounded"
-      },
-      image: customization.logoData || undefined,
-    });
-    
-    await mountQr();
-  }, [qr, url, currentMode, customization, mountQr]);
-
-  const setMode = async (mode: string) => {
+  const setMode = (mode: string) => {
     setCurrentMode(mode);
-    await updateQr();
   };
 
   const checkExistingUrl = async (urlToCheck: string) => {
@@ -311,12 +316,39 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
     return null;
   };
 
+  const updateQrCodeDestination = async (existingQrId: string) => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch(`/api/qr-codes/${existingQrId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ originalUrl: originalUrl }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update QR code destination.');
+      }
+
+      const updatedQr = await response.json();
+
+      // Visually confirm the change to the user
+      alert(`Success! The short URL ${updatedQr.shortUrl} now points to ${updatedQr.originalUrl}.`);
+      onQrCodeGenerated?.(); // Refresh the dashboard
+
+    } catch (error) {
+      console.error('Error updating QR code destination:', error);
+      alert('Failed to update the destination URL. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const updateExistingQrCode = async (existingQrId: string) => {
     setIsGenerating(true);
     
     try {
       // Generate QR code for the existing short URL
-      const qrInstance = createQrInstance(shortUrl || url);
+      const qrInstance = createQrInstance(shortUrl || originalUrl);
       
       // Create canvas for QR code data
       const canvas = document.createElement('canvas');
@@ -354,7 +386,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
           }).then(response => response.json())
           .then(() => {
             // Update QR display
-            mountQr();
+            updateQr();
             onQrCodeGenerated?.();
           });
           
@@ -371,19 +403,38 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
   };
 
   const generateShortUrlAndQr = async () => {
-    if (!url || url === DEFAULT_URL) {
+    if (!originalUrl || originalUrl === DEFAULT_URL) {
       alert('Please enter a valid URL to generate QR code');
       return;
     }
 
+    // If a QR code is loaded from the dashboard, handle updates specifically.
+    if (editingQr) {
+      // Case 1: The destination URL has changed.
+      if (originalUrl !== editingQr.originalUrl) {
+        const confirmUpdate = confirm(
+          `You are about to change the destination URL for the short URL "${editingQr.shortUrl}".\n\n` +
+          `Old URL: ${editingQr.originalUrl}\n` +
+          `New URL: ${originalUrl}\n\n` +
+          `Are you sure you want to continue?`
+        );
+        if (confirmUpdate) {
+          await updateQrCodeDestination(editingQr.id);
+        }
+      } else {
+        // Case 2: Only the design has changed, not the URL.
+        await updateExistingQrCode(editingQr.id);
+      }
+      return; // Stop execution after handling the update.
+    }
+
     // Check if URL already exists
-    const existingQr = await checkExistingUrl(url);
+    const existingQr = await checkExistingUrl(originalUrl);
     if (existingQr) {
       const shouldUpdate = confirm(
-        `A QR code for "${url}" already exists.\n\n` +
-        `Short URL: ${existingQr.shortUrl}\n` +
-        `Scans: ${existingQr.scanCount}\n\n` +
-        `Would you like to update the existing QR code with new customization options?`
+        `A QR code for this URL already exists.\n\n` +
+        `Short URL: ${existingQr.shortUrl}\n\n` +
+        `Would you like to update the existing QR code's design?`
       );
       
       if (shouldUpdate) {
@@ -401,7 +452,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: originalUrl }),
       });
       
       if (!shortenResponse.ok) {
@@ -429,6 +480,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
         const img = new Image();
         img.onload = () => {
           ctx.drawImage(img, 0, 0);
+          setUrl(finalShortUrl);
           const dataUrl = canvas.toDataURL();
           
           // Save QR code to database with customization options
@@ -438,7 +490,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              originalUrl: url,
+              originalUrl: originalUrl,
               shortUrl: finalShortUrl,
               qrData: dataUrl,
               gradientColors: JSON.stringify(customization.gradientColors),
@@ -454,7 +506,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
           .then(() => {
             // Update QR display with short URL
             setUrl(finalShortUrl);
-            mountQr();
+            updateQr();
             onQrCodeGenerated?.();
           });
           
@@ -473,7 +525,7 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
   const exportQr = async (format: 'png' | 'svg') => {
     if (!qr) return;
 
-    const dataValue = shortUrl || url || DEFAULT_URL;
+    const dataValue = shortUrl || originalUrl || DEFAULT_URL;
     const exportQrSize = exportSize;
     const designCanvasSize = QR_SIZE + 2 * FRAME_PADDING + FRAME_STROKE;
 
@@ -556,18 +608,21 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
     }
   };
 
-  useEffect(() => {
-    mountQr();
-  }, [mountQr]);
-
+  // Initial mount effect
   useEffect(() => {
     updateQr();
-  }, [url, currentMode, customization, updateQr]);
+  }, []);
+
+  // Update effect when dependencies change
+  useEffect(() => {
+    updateQr();
+  }, [url, currentMode, customization]);
 
   // Load existing QR code data when qrCodeToLoad is provided
   useEffect(() => {
     if (qrCodeToLoad) {
-      setUrl(qrCodeToLoad.originalUrl);
+      setEditingQr(qrCodeToLoad);
+      setOriginalUrl(qrCodeToLoad.originalUrl);
       setShortUrl(qrCodeToLoad.shortUrl);
       
       // Parse and restore customization options
@@ -595,6 +650,11 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
     }
   }, [qrCodeToLoad, onQrCodeLoaded]);
 
+  // When a short URL is generated or loaded, update the QR code to point to it
+  useEffect(() => {
+    if (shortUrl) setUrl(shortUrl);
+  }, [shortUrl]);
+
   return (
     <div className="preview">
       <div className="preview-layout">
@@ -611,18 +671,19 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
           {/* Light/Dark Mode Toggle */}
           <div className="customization-section">
             <label>QR Code Mode:</label>
-            <button
-              className="toggle"
-              aria-label="Toggle QR light/dark"
-              title="Toggle QR light/dark"
-              aria-pressed={currentMode === LIGHT_MODE}
-              onClick={() => setMode(currentMode === DARK_MODE ? LIGHT_MODE : DARK_MODE)}
-            >
-              <span className="toggle__knob" aria-hidden="true"></span>
-              <span className="toggle__label">
-                {currentMode === LIGHT_MODE ? "Dark QR" : "Light QR"}
-              </span>
-            </button>
+            <div className="flex items-center gap-2">
+              <Sun size={16} className="text-gray-400" />
+              <Toggle
+                pressed={currentMode === LIGHT_MODE}
+                onPressedChange={(pressed) => setMode(pressed ? LIGHT_MODE : DARK_MODE)}
+                variant="outline"
+                size="sm"
+                className="data-[state=on]:bg-orange-500 data-[state=on]:text-white"
+              >
+                {currentMode === LIGHT_MODE ? "Light" : "Dark"}
+              </Toggle>
+              <Moon size={16} className="text-gray-400" />
+            </div>
           </div>
           
           {/* Gradient Colors */}
@@ -746,15 +807,26 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
       <div className="controls-row">
         <div className="control-left">
           <label htmlFor="url-input" className="sr-only">URL</label>
-          <input
+          <input 
             id="url-input"
             type="url"
             placeholder="Enter URL"
             spellCheck="false"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            value={originalUrl}
+            onChange={(e) => setOriginalUrl(e.target.value)}
           />
         </div>
+        {shortUrl && (
+        <div className="short-url-preview" style={{ opacity: qrCodeToLoad || editingQr ? 1 : 0 }}>
+          <h4>{qrCodeToLoad ? "Loaded QR Code:" : "Generated Short URL:"}</h4>
+          <div className="url-display">
+            <span className="short-url">{shortUrl}</span>
+            <button onClick={copyShortUrl} className="copy-button" title="Copy URL">
+              <Copy size={16} />
+            </button>
+          </div>
+        </div>
+        )}
       </div>
 
       <div className="actions">
@@ -791,24 +863,6 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
           SVG
         </button>
       </div>
-
-      {shortUrl && (
-        <div className="short-url-preview">
-          <h4>{qrCodeToLoad ? "Loaded QR Code:" : "Generated Short URL:"}</h4>
-          <div className="url-display">
-            <span className="short-url">{shortUrl}</span>
-            <button onClick={copyShortUrl} className="copy-button" title="Copy URL">
-              <Copy size={16} />
-            </button>
-          </div>
-          <p className="url-info">
-            {qrCodeToLoad 
-              ? "QR code loaded from dashboard. You can modify customization options and regenerate if needed."
-              : "QR code has been saved and is ready for tracking. Switch to the \"Track QR Codes\" tab to view analytics."
-            }
-          </p>
-        </div>
-      )}
     </div>
   );
 }

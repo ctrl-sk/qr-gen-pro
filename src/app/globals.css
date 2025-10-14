@@ -16,6 +16,27 @@
   --border-radius: 16px;
   --padding-qr: 64px; /* required padding */
   --max-width: 800px;
+
+  /* shadcn/ui variables */
+  --background: #141413;
+  --foreground: #ffffff;
+  --card: #141413;
+  --card-foreground: #ffffff;
+  --popover: #141413;
+  --popover-foreground: #ffffff;
+  --primary: #fcfbfa;
+  --primary-foreground: #001321;
+  --secondary: #323231;
+  --secondary-foreground: #ffffff;
+  --muted: #323231;
+  --muted-foreground: #fcfbfa;
+  --accent: #F37338;
+  --accent-foreground: #ffffff;
+  --destructive: #dc3545;
+  --destructive-foreground: #ffffff;
+  --border: #323231;
+  --input: #323231;
+  --ring: #F37338;
 }
 
 * { 
@@ -81,42 +102,25 @@ h1 {
   justify-content: center;
   margin-bottom: 16px;
   background: var(--outline-bg-dark);
+  align-self: stretch;
 }
 
 .preview__outline[data-mode="light"] {
   background: var(--outline-bg-light);
 }
 
-.toggle {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--outline);
-  background: #323231;
-  color: var(--color-muted);
-  cursor: pointer;
+/* Custom toggle styles for shadcn integration */
+.customization-section .flex {
+  margin-top: 8px;
 }
 
-.toggle__knob {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  display: inline-block;
+.customization-section .flex svg {
+  opacity: 0.7;
+  transition: opacity 0.2s;
 }
 
-.toggle[aria-pressed="true"] .toggle__knob { 
-  background: var(--color-accent-contrast); 
-}
-
-.toggle__label {
-  font-size: 14px;
-  color: var(--color-muted);
+.customization-section .flex:hover svg {
+  opacity: 1;
 }
 
 .qr-container {
@@ -332,19 +336,6 @@ input[type="url"] {
     padding: 12px;
   }
 
-  .toggle {
-    padding: 4px 8px;
-    gap: 6px;
-  }
-
-  .toggle__knob {
-    width: 12px;
-    height: 12px;
-  }
-
-  .toggle__label {
-    font-size: 11px;
-  }
 
   .actions {
     flex-wrap: wrap;
@@ -430,7 +421,7 @@ input[type="url"] {
 /* Customization Panel Styles */
 .customization-panel {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
   width: 280px;
@@ -438,6 +429,7 @@ input[type="url"] {
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 20px;
+  align-self: stretch;
 }
 
 .customization-panel h3 {

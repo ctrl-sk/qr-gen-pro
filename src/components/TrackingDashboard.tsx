@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Pause, Trash2, Eye, Edit } from 'lucide-react';
 
 interface QRCode {
@@ -17,6 +17,7 @@ interface QRCode {
   dotType?: string;
   cornerEyeType?: string;
   cornerEyeColor?: string;
+  cornerSquareType?: string;
   dotColor?: string;
   cornerSquareColor?: string;
 }
@@ -32,49 +33,68 @@ export default function TrackingDashboard({
 }: TrackingDashboardProps) {
   const [qrCodes, setQrCodes] = useState<QRCode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingUrl, setEditingUrl] = useState<string | null>(null);
-  const [editUrl, setEditUrl] = useState<string>('');
+
+  const fetchQrCodes = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/qr-codes');
+      if (response.ok) {
+        const data = await response.json();
+        setQrCodes(data);
+      }
+    } catch (error) {
+      console.error('Error fetching QR codes:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchQrCodes = async () => {
+    fetchQrCodes();
+  }, [refreshTrigger, fetchQrCodes]);
+
+  const toggleQrActive = async (qrCode: QRCode) => {
+    try {
+      const response = await fetch(`/api/qr-codes/${qrCode.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !qrCode.isActive }),
+      });
+      if (response.ok) {
+        setQrCodes(prevQrCodes =>
+          prevQrCodes.map(qr =>
+            qr.id === qrCode.id ? { ...qr, isActive: !qr.isActive } : qr
+          )
+        );
+      } else {
+        console.error('Failed to toggle QR code status');
+        alert('Failed to update QR code status. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error toggling QR code status:', error);
+      alert('An error occurred. Please try again.');
+    }
+  };
+
+  const deleteQrCode = async (qrCode: QRCode) => {
+    if (confirm(`Are you sure you want to delete the QR code for "${qrCode.originalUrl}"? This action is permanent.`)) {
       try {
-        const response = await fetch('/api/qr-codes');
+        const response = await fetch(`/api/qr-codes/${qrCode.id}`, {
+          method: 'DELETE',
+        });
         if (response.ok) {
-          const data = await response.json();
-          setQrCodes(data);
+          setQrCodes(prevQrCodes =>
+            prevQrCodes.filter(qr => qr.id !== qrCode.id)
+          );
+        } else {
+          console.error('Failed to delete QR code');
+          alert('Failed to delete QR code. Please try again.');
         }
       } catch (error) {
-        console.error('Error fetching QR codes:', error);
-      } finally {
-        setLoading(false);
+        console.error('Error deleting QR code:', error);
+        alert('An error occurred. Please try again.');
       }
-    };
-    fetchQrCodes();
-  }, [refreshTrigger]);
-
-  const handleEditClick = (qrCode: QRCode) => {
-    setEditingUrl(qrCode.id);
-    setEditUrl(qrCode.originalUrl);
-  };
-
-  const handleEditSave = () => {
-    // Implement edit save logic - send POST/PATCH to your API
-    setEditingUrl(null);
-  };
-
-  const handleEditCancel = () => {
-    setEditingUrl(null);
-    setEditUrl('');
-  };
-
-  const toggleQrActive = async () => {
-    // Implement toggle logic - send POST/PATCH to your API
-    setLoading(true);
-  };
-
-  const deleteQrCode = async () => {
-    // Implement delete logic - send DELETE to your API
-    setLoading(true);
+    }
   };
 
   const loadQrCodeToGenerator = (qrCode: QRCode) => {
@@ -125,34 +145,15 @@ export default function TrackingDashboard({
                 />
               </td>
               <td>
-                {editingUrl === qrCode.id ? (
-                  <input
-                    value={editUrl}
-                    onChange={e => setEditUrl(e.target.value)}
-                    className="edit-url-input"
-                    autoFocus
-                  />
-                ) : (
-                  qrCode.originalUrl
-                )}
+                {qrCode.originalUrl}
               </td>
               <td>{qrCode.shortUrl}</td>
               <td>{qrCode.scanCount}</td>
               <td>{qrCode.isActive ? 'Active' : 'Paused'}</td>
               <td>{formatDate(qrCode.createdAt)}</td>
               <td>
-                {editingUrl === qrCode.id ? (
-                  <>
-                    <button onClick={handleEditSave}>Save</button>
-                    <button onClick={handleEditCancel}>Cancel</button>
-                  </>
-                ) : (
-                  <>
-                    <Edit size={16} style={{ cursor: 'pointer' }} onClick={() => handleEditClick(qrCode)} />
-                    <Pause size={16} style={{ cursor: 'pointer' }} onClick={toggleQrActive} />
-                    <Trash2 size={16} style={{ cursor: 'pointer' }} onClick={deleteQrCode} />
-                  </>
-                )}
+                <Pause size={16} style={{ cursor: 'pointer' }} onClick={() => toggleQrActive(qrCode)} />
+                <Trash2 size={16} style={{ cursor: 'pointer' }} onClick={() => deleteQrCode(qrCode)} />
               </td>
             </tr>
           ))}
