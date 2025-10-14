@@ -12,7 +12,7 @@ export async function GET(
     const qrCode = await db.qrCode.findFirst({
       where: { 
         shortUrl: {
-          endsWith: shortId
+          endsWith: `/${shortId}`
         }
       },
     });
