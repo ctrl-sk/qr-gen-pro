@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+// Satisfies the Vercel build process for route handler type validation.
+export const config = {};
+
 interface UpdatePayload {
   originalUrl?: string;
   isActive?: boolean;

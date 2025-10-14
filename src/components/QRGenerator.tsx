@@ -611,12 +611,12 @@ export default function QRGenerator({ onQrCodeGenerated, qrCodeToLoad, onQrCodeL
   // Initial mount effect
   useEffect(() => {
     updateQr();
-  }, []);
+  }, [updateQr]);
 
   // Update effect when dependencies change
   useEffect(() => {
     updateQr();
-  }, [url, currentMode, customization]);
+  }, [url, currentMode, customization, updateQr]);
 
   // Load existing QR code data when qrCodeToLoad is provided
   useEffect(() => {

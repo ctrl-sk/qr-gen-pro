@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Pause, Trash2, Eye, Edit } from 'lucide-react';
+import { Pause, Trash2, Eye } from 'lucide-react';
 
 interface QRCode {
   id: string;
